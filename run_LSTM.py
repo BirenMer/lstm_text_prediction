@@ -2,8 +2,8 @@ import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 from LSTM import LSTM
-from LSTM_text_prediction.activation_function import softmax
-from LSTM_text_prediction.model_utils import one_hot_encode_batch
+from activation_function import softmax
+from model_utils import one_hot_encode_batch
 from activation_function.Sigmoid import Sigmoid
 from activation_function.Tanh import Tanh
 from optimizers.optimizerSGD import OptimizerSGD
