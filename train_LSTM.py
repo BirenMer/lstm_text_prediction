@@ -8,7 +8,7 @@ from optimizers.optimizerSGD import OptimizerSGD
 from optimizers.optimizerSGDLSTM import OptimizerSGDLSTM
 from layers.dense_layer import DenseLayer
 
-logging.basicConfig(filename="epoc=h_update.log", level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(filename="epoch_update.log", level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 def train_LSTM(X, Y, vocab_size, char_to_idx, idx_to_char, n_epoch=500, n_neurons=500, learning_rate=1e-5, 
               decay=0, momentum=0, batch_size=1024):
