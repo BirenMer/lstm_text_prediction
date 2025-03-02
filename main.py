@@ -1,8 +1,9 @@
 import os
 import pickle
+from data_preparation_utils import prepare_text_data
 from model_utils import load_model, save_model
 from prediction_function import generate_text
-from run_LSTM import prepare_text_data, RunMyLSTM
+from run_LSTM import RunMyLSTM
 
 
 def main(file_path, seq_length=100, n_neurons=256, n_epoch=2, batch_size=1024, model_path="saved_model"):
