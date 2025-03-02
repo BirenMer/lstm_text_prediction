@@ -89,50 +89,93 @@ class LSTM:
         
         return self.H[:, 1:]  # Return all hidden states except initial state
 
+
     def backward(self, dH):
         batch_size, seq_length, _ = dH.shape
-        dUf, dWf, dbf = np.zeros_like(self.Uf), np.zeros_like(self.Wf), np.zeros_like(self.bf)
-        dUi, dWi, dbi = np.zeros_like(self.Ui), np.zeros_like(self.Wi), np.zeros_like(self.bi)
-        dUo, dWo, dbo = np.zeros_like(self.Uo), np.zeros_like(self.Wo), np.zeros_like(self.bo)
-        dUg, dWg, dbg = np.zeros_like(self.Ug), np.zeros_like(self.Wg), np.zeros_like(self.bg)
         
+        # Initialize gradients
+        dUf = np.zeros_like(self.Uf)
+        dWf = np.zeros_like(self.Wf)
+        dbf = np.zeros_like(self.bf)
+        dUi = np.zeros_like(self.Ui)
+        dWi = np.zeros_like(self.Wi)
+        dbi = np.zeros_like(self.bi)
+        dUo = np.zeros_like(self.Uo)
+        dWo = np.zeros_like(self.Wo)
+        dbo = np.zeros_like(self.bo)
+        dUg = np.zeros_like(self.Ug)
+        dWg = np.zeros_like(self.Wg)
+        dbg = np.zeros_like(self.bg)
+        
+        # Initialize previous deltas
+        delta_h_prev = np.zeros((self.n_neurons, 1))
+        delta_c_prev = np.zeros((self.n_neurons, 1))
+        
+        # Loop over each batch
         for b in range(batch_size):
             delta_h = np.zeros((self.n_neurons, 1))
             delta_c = np.zeros((self.n_neurons, 1))
+            # Process each timestep in reverse
             for t in reversed(range(seq_length)):
+
+                # Retrieve inputs and states
                 xt = self.X[b, t].reshape(-1, 1)
-                ht_prev = self.H[b, t].reshape(-1, 1)
                 ft = self.gates['F'][b, t].reshape(-1, 1)
                 it = self.gates['I'][b, t].reshape(-1, 1)
                 ot = self.gates['O'][b, t].reshape(-1, 1)
                 c_tilde = self.gates['C_tilde'][b, t].reshape(-1, 1)
-                ct = self.C[b, t+1].reshape(-1, 1)
                 ct_prev = self.C[b, t].reshape(-1, 1)
-
-                dht = dH[b, t].reshape(-1, 1) + delta_h
-                tanh = Tanh()
-                dct = delta_c + dht * ot * tanh.backward(tanh.forward(ct))
+                ht_prev = self.H[b, t].reshape(-1, 1)
+                ct = self.C[b, t + 1].reshape(-1, 1)
                 
-                dot = (dht * tanh.forward(ct) + dct * c_tilde) * (ot * (1 - ot))
-                dit = dct * c_tilde * (it * (1 - it))
-                dft = dct * ct_prev * (ft * (1 - ft))
-                dc_tilde = dct * it * (1 - c_tilde**2)
+                # Current hidden state gradient
+                current_dh = dH[b, t].reshape(-1, 1)
+                delta_h = current_dh + delta_h_prev
+                    
+                # Compute cell state gradient
+                tanh_ct = np.tanh(ct)
+                grad_tanh_ct = 1 - tanh_ct ** 2
+                delta_c = delta_c_prev + delta_h * ot * grad_tanh_ct
                 
-                # Compute gradients and accumulate
+                # Compute gate gradients
+                dft = delta_c * ct_prev * ft * (1 - ft)
+                dit = delta_c * c_tilde * it * (1 - it)
+                dot = delta_h * tanh_ct * ot * (1 - ot)
+                dc_tilde = delta_c * it * (1 - c_tilde ** 2)
+                
+                # Update parameter gradients
                 dUf += np.dot(dft, xt.T)
                 dWf += np.dot(dft, ht_prev.T)
-                dbf += dft.sum(axis=0).reshape(-1,1)
+                dbf += dft.sum(axis=0)
                 
-                delta_h = (np.dot(self.Wf.T, dft) 
-                        + np.dot(self.Wi.T, dit) 
-                        + np.dot(self.Wo.T, dot)
-                        + np.dot(self.Wg.T, dc_tilde))
+                dUi += np.dot(dit, xt.T)
+                dWi += np.dot(dit, ht_prev.T)
+                dbi += dit.sum(axis=0)
                 
-                delta_c = dct * ft
-            
-        self.gradients = {
-            'Uf': dUf, 'Wf': dWf, 'bf': dbf,
-            'Ui': dUi, 'Wi': dWi, 'bi': dbi,
-            'Uo': dUo, 'Wo': dWo, 'bo': dbo,
-            'Ug': dUg, 'Wg': dWg, 'bg': dbg
-        }
+                dUo += np.dot(dot, xt.T)
+                dWo += np.dot(dot, ht_prev.T)
+                dbo += dot.sum(axis=0)
+                
+                dUg += np.dot(dc_tilde, xt.T)
+                dWg += np.dot(dc_tilde, ht_prev.T)
+                dbg += dc_tilde.sum(axis=0)
+                
+                # Update previous deltas
+                delta_h_prev = np.dot(self.Wf.T, dft) + np.dot(self.Wi.T, dit) + \
+                            np.dot(self.Wo.T, dot) + np.dot(self.Wg.T, dc_tilde)
+                delta_c_prev = delta_c * ft
+        
+            # Average gradients across batch
+            n_samples = batch_size
+            self.dUf = dUf / n_samples
+            self.dWf = dWf / n_samples
+            self.dbf = dbf / n_samples
+            self.dUi = dUi / n_samples
+            self.dWi = dWi / n_samples
+            self.dbi = dbi / n_samples
+            self.dUo = dUo / n_samples
+            self.dWo = dWo / n_samples
+            self.dbo = dbo / n_samples
+            self.dUg = dUg / n_samples
+            self.dWg = dWg / n_samples
+            self.dbg = dbg / n_samples
