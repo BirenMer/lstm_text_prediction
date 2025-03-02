@@ -1,6 +1,6 @@
 import os
 import pickle
-from LSTM_text_prediction.model_utils import load_model, save_model
+from model_utils import load_model, save_model
 from prediction_function import generate_text
 from run_LSTM import prepare_text_data, RunMyLSTM
 
@@ -33,9 +33,12 @@ def main(file_path, seq_length=100, n_neurons=256, n_epoch=2, batch_size=1024, m
     return lstm, dense_layers, char_to_idx, idx_to_char
 
 if __name__ == "__main__":
-    lstm, dense_layers, char_to_idx, idx_to_char = main("/home/wifee/workspace/learning/ML_book/LSTM_text_prediction/Mobi_dick_book.txt")
+    lstm, dense_layers, char_to_idx, idx_to_char = main("/path_to_your_training_data_txt_file")
 
-    seed_text = "Here they saw such huge troops of whales,".lower()
+    #Add a line below from you training data.
+    seed_text = "".lower()
+    
+    #Logging the learned characters
     print("Available characters:", char_to_idx.keys())
     
     generated_text = generate_text(lstm, dense_layers, seed_text, char_to_idx, idx_to_char, length=500)
