@@ -1,4 +1,5 @@
 import datetime
+import logging
 import numpy as np
 import matplotlib.pyplot as plt
 from LSTM import LSTM
@@ -7,7 +8,9 @@ from optimizers.optimizerSGD import OptimizerSGD
 from optimizers.optimizerSGDLSTM import OptimizerSGDLSTM
 from layers.dense_layer import DenseLayer
 
-def RunMyLSTM(X, Y, vocab_size, char_to_idx, idx_to_char, n_epoch=500, n_neurons=500, learning_rate=1e-5, 
+logging.basicConfig(filename="epoc=h_update.log", level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+def train_LSTM(X, Y, vocab_size, char_to_idx, idx_to_char, n_epoch=500, n_neurons=500, learning_rate=1e-5, 
               decay=0, momentum=0, batch_size=1024):
     # Initialize models
     lstm = LSTM(n_neurons=n_neurons, n_features=vocab_size)
@@ -21,8 +24,11 @@ def RunMyLSTM(X, Y, vocab_size, char_to_idx, idx_to_char, n_epoch=500, n_neurons
     
     losses = []
     print(f"Starting training with {n_samples} samples...")
+    logging.info(f"Number of samples : {n_samples}")
+
     for epoch in range(n_epoch):
         print(f"Currently at epoch {epoch}")
+
         start_time = datetime.datetime.now()
         loss_total = 0
         indices = np.random.permutation(n_samples)
@@ -67,7 +73,8 @@ def RunMyLSTM(X, Y, vocab_size, char_to_idx, idx_to_char, n_epoch=500, n_neurons
         print(f"Epoch {epoch+1}/{n_epoch}, Loss: {epoch_loss:.4f}")
         end_time = datetime.datetime.now()
         print(rf"Total time for epoch {epoch}: {end_time - start_time}")
-    
+        logging.info(f"Done for epoch {epoch} in {end_time - start_time}")
+
     # Plot training loss
     plt.plot(losses)
     plt.title("Training Loss Over Time")
